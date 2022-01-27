@@ -1,0 +1,30 @@
+import time
+import boto3
+
+AWS_REGION = "us-east-1"
+EC2_CLIENT = boto3.client('ec2', region_name=AWS_REGION)
+VOLUME_ID = 'vol-0e4da838e313a30c9'
+
+def get_modification_state(volume_id):
+    response = EC2_CLIENT.describe_volumes_modifications(
+        VolumeIds=[
+            VOLUME_ID
+        ]
+    )
+    return response['VolumesModifications'][0]['ModificationState']
+
+modify_volume_response = EC2_CLIENT.modify_volume(
+    VolumeId=VOLUME_ID,
+    Size=20
+)
+
+while True:
+    state = get_modification_state(VOLUME_ID)
+    if state == 'completed' or state == None:
+        break
+    elif state == 'failed':
+        raise Exception('Failed to modify volume size')
+    else:
+        time.sleep(60)
+
+print(f'Volume {VOLUME_ID} successfully resized')
