@@ -13,7 +13,7 @@ def lambda_handler(event, context):
     reservations = ec.describe_instances(Filters=[
         {
             'Name': 'tag-key',
-            'Values': ['AmiBackup', 'True']
+            'Values': ['AmiBackup', 'yes']
         },
     ]).get('Reservations', [])
 
@@ -30,14 +30,14 @@ def lambda_handler(event, context):
                 if t['Key'] == 'Retention'
             ][0]
         except IndexError:
-            retention_days = 0
+            retention_days = 1
             create_time = datetime.datetime.now()
             create_fmt = create_time.strftime('%Y-%m-%d')
 
             AMIid = ec.create_image(
                 InstanceId=instance['InstanceId'], 
-                Name=  instance['InstanceId'] +  create_time.strftime('_%Y-%m-%d-%S'),
-                Description="Lambda created AMI of instance " +
+                Name=  instance['InstanceId'] +  create_time.strftime('_[%Y-%m-%d-%I-%M-%S]'),
+                Description="AMI of instance " +
                 instance['InstanceId'] + " from " + create_fmt,
                 NoReboot=True,
                 DryRun=False)
@@ -63,7 +63,7 @@ def lambda_handler(event, context):
         ec.create_tags(Resources=to_tag[retention_days],
                        Tags=[
                            {
-                               'Key': 'DeleteOn',
+                               'Key': 'DeregisterAMI Date',
                                'Value': delete_fmt
                            },
                        ])
